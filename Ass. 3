@@ -1,0 +1,116 @@
+clear all
+set more off
+cd "C:\Users\ludov\OneDrive\LUDO\Bocconi\second semester\micrometrics\STATA lab\assignment 3"
+
+capture log close
+log using assignment3, text replace
+
+***************************************************************************
+******************** Questions 1-3 ****************************************
+***************************************************************************
+
+/*See the attached pdf file*/
+
+***************************************************************************
+******************** Questions 4 ******************************************
+***************************************************************************
+use SIN19932001
+
+collapse (mean) years_school, by (pop_census_bin100)
+
+graph twoway scatter years_school pop_census_bin100, ///
+ytitle(Average mayor's years of education) xtitle(Population size)
+
+graph export figure1.png, replace
+
+***************************************************************************
+******************** Questions 5 ******************************************
+***************************************************************************
+
+/*See the attached pdf file */
+
+***************************************************************************
+******************** Questions 6 ******************************************
+***************************************************************************
+
+/*for the weighted regression */
+graph twoway scatter years_school pop_census_bin100 || ///
+lowess years_school pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick) ///
+|| lowess years_school pop_census_bin100 if pop_census_bin100>=5000, ///
+ytitle(Average mayor's years of education) xtitle(Population size) ///
+lcolor(black) lwidth(medthick) legend(off)
+
+graph export figure2.png, replace
+
+/*for the local linear regression */
+preserve
+drop if pop_census>=5000
+regress years_school pop_census
+predict yhat_small
+save reduced_, replace
+restore
+
+drop if pop_census<5000
+regress years_school pop_census
+predict yhat_big
+append using reduced_
+
+graph twoway scatter years_school pop_census_bin100 ///
+|| line yhat_small pop_census_bin100, lcolor(black) lwidth(medthick) || ///
+line yhat_big pop_census_bin100, ytitle(Average mayor's years of education) xtitle(Population size) ///
+lcolor(black) lwidth(medthick) legend(off)
+graph export figure3.png, replace
+
+clear all
+use SIN19932001
+drop if pop_census<=4400 | pop_census>5690
+count 
+count if pop_census>=5000 /*approximately 550 units in each grouop*/
+
+collapse (mean) years_school, by (pop_census_bin100)
+
+preserve
+drop if pop_census>=5000
+regress years_school pop_census
+predict yhat_small
+save reduced2_, replace
+
+restore
+drop if pop_census<5000
+regress years_school pop_census
+predict yhat_big
+append using reduced2_
+
+graph twoway scatter years_school pop_census_bin100 ///
+|| line yhat_small pop_census_bin100, lcolor(black) lwidth(medthick) || ///
+line yhat_big pop_census_bin100, ytitle(Average mayor's years of education) xtitle(Population size) ///
+lcolor(black) lwidth(medthick) legend(off)
+graph export figure4.png, replace
+
+clear all
+use SIN19932001
+drop if pop_census<=4684 | pop_census>5295
+count
+count if pop_census>=5000 /*approximately 275 units in each grouop*/
+
+collapse (mean) years_school, by (pop_census_bin100)
+
+preserve
+drop if pop_census>=5000
+regress years_school pop_census
+predict yhat_small
+save reduced2_, replace
+
+restore
+drop if pop_census<5000
+regress years_school pop_census
+predict yhat_big
+append using reduced2_
+
+graph twoway scatter years_school pop_census_bin100 ///
+|| line yhat_small pop_census_bin100, lcolor(black) lwidth(medthick) || ///
+line yhat_big pop_census_bin100, ytitle(Average mayor's years of education) xtitle(Population size) ///
+lcolor(black) lwidth(medthick) legend(off)
+graph export figure5.png, replace
+
+
