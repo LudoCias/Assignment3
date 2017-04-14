@@ -114,3 +114,85 @@ lcolor(black) lwidth(medthick) legend(off)
 graph export figure5.png, replace
 
 
+
+***************************************************************************
+******************** Questions 7 ******************************************
+***************************************************************************
+/*Test 1: no jump in density of population size at the threshold*/
+clear all
+use SIN19932001
+histogram pop_census, bin(36) frequency kdensity color(blue) ///
+fcolor(bluishgray) lwidth(medthick) xtitle(Population size)
+graph export test1.png, replace
+
+/*Test 2: no discontinuity in the covariates at the threshold*/
+clear all
+use SIN19932001
+collapse (mean) gender age, by (pop_census_bin100)
+
+graph twoway scatter gender pop_census_bin100 || ///
+lowess gender pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick) ///
+|| lowess gender pop_census_bin100 if pop_census_bin100>=5000, ///
+ytitle(Probability that mayor is woman) xtitle(Population size) ///
+lcolor(black) lwidth(medthick) legend(off)
+
+graph export test2a.png, replace
+
+graph twoway scatter age pop_census_bin100 || ///
+lowess age pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick) ///
+|| lowess age pop_census_bin100 if pop_census_bin100>=5000, ///
+ytitle(Mayor's age) xtitle(Population size) ///
+lcolor(black) lwidth(medthick) legend(off)
+graph export test2b.png, replace
+
+clear all
+use SIN19932001
+sort id_city
+quietly by id_city:  gen dup = cond(_N==1,0,_n)
+tab dup
+drop if dup>1 /*so that we have only one observation per city*/
+
+collapse (mean) extension alt_center NORTH, by (pop_census_bin100)
+
+graph twoway scatter extension pop_census_bin100 || ///
+lowess extension pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick) ///
+|| lowess extension pop_census_bin100 if pop_census_bin100>=5000, ///
+ytitle(City's area) xtitle(Population size) ///
+lcolor(black) lwidth(medthick) legend(off)
+graph export test2c.png, replace
+
+graph twoway scatter alt_center pop_census_bin100 || ///
+lowess alt_center pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick) ///
+|| lowess alt_center pop_census_bin100 if pop_census_bin100>=5000, ///
+ytitle(City's altitude) xtitle(Population size) ///
+lcolor(black) lwidth(medthick) legend(off)
+graph export test2d.png, replace
+
+graph twoway scatter NORTH pop_census_bin100 || ///
+lowess NORTH pop_census_bin100 if pop_census_bin100<5000, lcolor(black) lwidth(medthick) ///
+|| lowess NORTH pop_census_bin100 if pop_census_bin100>=5000, ///
+ytitle(Probability that city is North) xtitle(Population size) ///
+lcolor(black) lwidth(medthick) legend(off)
+graph export test2e.png, replace /*here I see a jump, try also with LLR */
+
+preserve
+drop if pop_census>=5000
+regress NORTH pop_census
+predict yhat_small
+save reduced_, replace
+restore
+
+drop if pop_census<5000
+regress NORTH pop_census
+predict yhat_big
+append using reduced_
+
+graph twoway scatter NORTH pop_census_bin100 ///
+|| line yhat_small pop_census_bin100, lcolor(black) lwidth(medthick) || ///
+line yhat_big pop_census_bin100, ytitle(Probability that city is North) xtitle(Population size) ///
+lcolor(black) lwidth(medthick) legend(off)
+graph export figure2e_.png, replace /*still the jump, check the distribution*/
+
+tab NORTH if pop_census<5000
+tab NORTH if pop_census>=5000 /*approximately same probability*/
+
